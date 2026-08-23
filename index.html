@@ -75,26 +75,59 @@
         </tr>
       </thead>
       <tbody id="sarprasTableBody">
-        <!-- https://database-papan-digital-default-rtdb.asia-southeast1.firebasedatabase.app/ -->
+        <tr><td colspan="5" style="text-align:center;">Memuat data dari Firebase...</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
 <script>
-  // Mengambil data dari https://database-papan-digital-default-rtdb.asia-southeast1.firebasedatabase.app/ saat halaman dimuat
-  document.addEventListener('DOMContentLoaded', loadData);
+  // URL Firebase Realtime Database
+  const DB_URL = "https://database-papan-digital-default-rtdb.asia-southeast1.firebasedatabase.app/sarpras";
 
-  function getStorageData() {
-    return https://database-papan-digital-default-rtdb.asia-southeast1.firebasedatabase.app/.parse(localStorage.getItem('sarprasData')) || [];
+  // Memuat data saat halaman dibuka
+  document.addEventListener('DOMContentLoaded', fetchFirebaseData);
+
+  // Fungsi untuk mengambil data dari Firebase (GET)
+  async function fetchFirebaseData() {
+    const tableBody = document.getElementById('sarprasTableBody');
+    try {
+      const response = await fetch(`${DB_URL}.json`);
+      const data = await response.json();
+
+      tableBody.innerHTML = '';
+
+      if (!data) {
+        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">Belum ada data sarpras. Silakan tambahkan di atas.</td></tr>`;
+        return;
+      }
+
+      // Render setiap item data ke tabel
+      Object.keys(data).forEach(id => {
+        const item = data[id];
+        let badgeClass = 'bg-aman';
+        if (item.status === 'Perlu Perhatian') badgeClass = 'bg-pantau';
+        if (item.status === 'Rusak') badgeClass = 'bg-rusak';
+
+        const row = `
+          <tr>
+            <td><strong>${item.name}</strong></td>
+            <td><span class="badge ${badgeClass}">${item.status}</span></td>
+            <td>${item.note}</td>
+            <td><small>${item.updatedAt}</small></td>
+            <td><button class="btn-delete" onclick="deleteItem('${id}')">Hapus</button></td>
+          </tr>
+        `;
+        tableBody.innerHTML += row;
+      });
+    } catch (error) {
+      console.error("Gagal mengambil data:", error);
+      tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Gagal terhubung ke Firebase. Periksa aturan Realtime Database Anda.</td></tr>`;
+    }
   }
 
-  function saveData(data) {
-    localStorage.setItem('sarprasData', JSON.stringify(data));
-    loadData();
-  }
-
-  function addOrUpdateItem() {
+  // Fungsi untuk menambah atau memperbarui item di Firebase
+  async function addOrUpdateItem() {
     const nameInput = document.getElementById('itemName').value.trim();
     const statusInput = document.getElementById('itemStatus').value;
     const noteInput = document.getElementById('itemNote').value.trim();
@@ -104,91 +137,61 @@
       return;
     }
 
-    const data = getStorageData();
     const now = new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+    
+    // Konversi nama menjadi ID unik (menghapus karakter khusus)
+    const itemId = nameInput.toLowerCase().replace(/[^a-z0-9]/g, '_');
 
-    // Cek apakah item sudah ada, jika ada maka update
-    const existingIndex = data.findIndex(item => item.name.toLowerCase() === nameInput.toLowerCase());
+    const payload = {
+      name: nameInput,
+      status: statusInput,
+      note: noteInput || '-',
+      updatedAt: now
+    };
 
-    if (existingIndex > -1) {
-      data[existingIndex].status = statusInput;
-      data[existingIndex].note = noteInput || '-';
-      data[existingIndex].updatedAt = now;
-    } else {
-      data.push({
-        name: nameInput,
-        status: statusInput,
-        note: noteInput || '-',
-        updatedAt: now
+    try {
+      // Menggunakan PUT agar jika nama barang sama, data lama ter-update
+      await fetch(`${DB_URL}/${itemId}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
+
+      // Reset input form & refresh tabel
+      document.getElementById('itemName').value = '';
+      document.getElementById('itemNote').value = '';
+      fetchFirebaseData();
+    } catch (error) {
+      console.error("Gagal menyimpan data:", error);
+      alert("Gagal menyimpan data ke Firebase.");
     }
-
-    saveData(data);
-
-    // Reset input form
-    document.getElementById('itemName').value = '';
-    document.getElementById('itemNote').value = '';
   }
 
-  function deleteItem(index) {
+  // Fungsi untuk menghapus item di Firebase (DELETE)
+  async function deleteItem(id) {
     if (confirm('Apakah Anda yakin ingin menghapus data item ini?')) {
-      const data = getStorageData();
-      data.splice(index, 1);
-      saveData(data);
+      try {
+        await fetch(`${DB_URL}/${id}.json`, {
+          method: 'DELETE'
+        });
+        fetchFirebaseData();
+      } catch (error) {
+        console.error("Gagal menghapus data:", error);
+        alert("Gagal menghapus data dari Firebase.");
+      }
     }
-  }
-
-  function loadData() {
-    const data = getStorageData();
-    const tableBody = document.getElementById('sarprasTableBody');
-    tableBody.innerHTML = '';
-
-    if (data.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">Belum ada data sarpras. Silakan tambahkan di atas.</td></tr>`;
-      return;
-    }
-
-    data.forEach((item, index) => {
-      let badgeClass = 'bg-aman';
-      if (item.status === 'Perlu Perhatian') badgeClass = 'bg-pantau';
-      if (item.status === 'Rusak') badgeClass = 'bg-rusak';
-
-      const row = `
-        <tr>
-          <td><strong>${item.name}</strong></td>
-          <td><span class="badge ${badgeClass}">${item.status}</span></td>
-          <td>${item.note}</td>
-          <td><small>${item.updatedAt}</small></td>
-          <td><button class="btn-delete" onclick="deleteItem(${index})">Hapus</button></td>
-        </tr>
-      `;
-      tableBody.innerHTML += row;
-    });
   }
 </script>
 
 </body>
 </html>
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+Catatan Pengaturan Firebase:
+Agar aplikasi dapat membaca dan menulis data tanpa login, buka konsol Firebase Anda → Realtime Database → tab Rules (Aturan), lalu pastikan aturannya seperti ini:
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyBR8g_IDOR2_PgTHwSBHvxIImb5ZCnJK7k",
-    authDomain: "database-papan-digital.firebaseapp.com",
-    projectId: "database-papan-digital",
-    storageBucket: "database-papan-digital.firebasestorage.app",
-    messagingSenderId: "1014666543927",
-    appId: "1:1014666543927:web:9995a935079bafeee6d0b2",
-    measurementId: "G-WN0HE9ZPZ1"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
+JSON
+{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}
