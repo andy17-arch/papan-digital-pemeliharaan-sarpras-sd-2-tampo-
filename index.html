@@ -169,76 +169,26 @@
 
 </body>
 </html>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <title>Daftar Catatan Online (Firebase)</title>
-</head>
-<body>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-  <h2>Daftar Catatan Online (Realtime)</h2>
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyBR8g_IDOR2_PgTHwSBHvxIImb5ZCnJK7k",
+    authDomain: "database-papan-digital.firebaseapp.com",
+    projectId: "database-papan-digital",
+    storageBucket: "database-papan-digital.firebasestorage.app",
+    messagingSenderId: "1014666543927",
+    appId: "1:1014666543927:web:9995a935079bafeee6d0b2",
+    measurementId: "G-WN0HE9ZPZ1"
+  };
 
-  <!-- Form Input -->
-  <input type="text" id="catatanInput" placeholder="Ketik catatan baru...">
-  <button onclick="simpanData()">Simpan ke Server</button>
-
-  <!-- Tempat Menampilkan Data -->
-  <ul id="daftarCatatan"></ul>
-
-  <!-- 1. Muat Firebase SDK (Modular CDN) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-    // 2. Tempelkan Konfigurasi Firebase Anda di Sini
-    const firebaseConfig = {
-      apiKey: "PASTE_API_KEY_ANDA_DI_SINI",
-      authDomain: "PROYEK-ANDA.firebaseapp.com",
-      databaseURL: "https://PROYEK-ANDA-default-rtdb.firebaseio.com",
-      projectId: "PROYEK-ANDA",
-      storageBucket: "PROYEK-ANDA.appspot.com",
-      messagingSenderId: "1234567890",
-      appId: "1:1234567890:web:abc123def456"
-    };
-
-    // 3. Inisialisasi Firebase & Database
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-    const dbRef = ref(database, 'catatan'); // Nama folder/node data di Firebase
-
-    // 4. MENDENGAR DATA SECARA REALTIME (Otomatis saat ada data baru)
-    onValue(dbRef, (snapshot) => {
-      const daftar = document.getElementById('daftarCatatan');
-      daftar.innerHTML = ''; // Kosongkan tampilan
-
-      const data = snapshot.val();
-      if (data) {
-        // Firebase menyimpan data sebagai objek, kita ubah ke array untuk ditampilkan
-        Object.keys(data).forEach((key) => {
-          const li = document.createElement('li');
-          li.textContent = data[key].teks;
-          daftar.appendChild(li);
-        });
-      }
-    });
-
-    // 5. FUNGSI UNTUK MENYIMPAN DATA KE FIREBASE
-    window.simpanData = function() {
-      const input = document.getElementById('catatanInput');
-      const teksBaru = input.value.trim();
-
-      if (teksBaru === '') return;
-
-      // Kirim data baru ke Firebase Database
-      push(dbRef, {
-        teks: teksBaru,
-        waktu: Date.now()
-      });
-
-      input.value = ''; // Reset input
-    };
-  </script>
-
-</body>
-</html>
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
