@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring Sarpras SD Digital</title>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { background-color: #f4f6f9; margin: 0; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    h2 { color: #2c3e50; margin-bottom: 5px; text-align: center; }
+    p.subtitle { text-align: center; color: #7f8c8d; margin-top: 0; margin-bottom: 20px; }
+    
+    /* Form Styling */
+    .form-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; background: #eef2f5; padding: 15px; border-radius: 8px; }
+    input, select, button { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; }
+    button { background: #27ae60; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    button:hover { background: #219150; }
+
+    /* Table Styling */
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background-color: #34495e; color: white; }
+
+    /* Status Badge */
+    .badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; color: white; display: inline-block; text-align: center; }
+    .bg-aman { background-color: #2ecc71; }
+    .bg-pantau { background-color: #f1c40f; color: #333; }
+    .bg-rusak { background-color: #e74c3c; }
+
+    .btn-delete { background: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
+    .btn-delete:hover { background: #c0392b; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Papan Digital Pemeliharaan Sarpras SD</h2>
+  <p class="subtitle">Sistem Pemantauan Operasional Harian Penjaga Sekolah</p>
+
+  <!-- Form Input / Update Barang -->
+  <div class="form-group">
+    <div>
+      <label>Nama Fasilitas / Alat:</label>
+      <input type="text" id="itemName" placeholder="Misal: Pompa Air Utama">
+    </div>
+    <div>
+      <label>Status Kelayakan:</label>
+      <select id="itemStatus">
+        <option value="Aman">🟢 Aman / Baik</option>
+        <option value="Perlu Perhatian">🟡 Perlu Perhatian</option>
+        <option value="Rusak">🔴 Rusak / Butuh Alat</option>
+      </select>
+    </div>
+    <div>
+      <label>Keterangan & Tindakan:</label>
+      <input type="text" id="itemNote" placeholder="Misal: Filter dicuci, kabel rapuh">
+    </div>
+    <div style="display: flex; align-items: flex-end;">
+      <button onclick="addOrUpdateItem()">Simpan Status</button>
+    </div>
+  </div>
+
+  <!-- Tabel Pemantauan -->
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Fasilitas / Alat</th>
+          <th>Status</th>
+          <th>Keterangan / Tindakan</th>
+          <th>Terakhir Diperbarui</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="sarprasTableBody">
+        <!-- Data akan dimasukkan oleh JavaScript -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Mengambil data dari LocalStorage saat halaman dimuat
+  document.addEventListener('DOMContentLoaded', loadData);
+
+  function getStorageData() {
+    return JSON.parse(localStorage.getItem('sarprasData')) || [];
+  }
+
+  function saveData(data) {
+    localStorage.setItem('sarprasData', JSON.stringify(data));
+    loadData();
+  }
+
+  function addOrUpdateItem() {
+    const nameInput = document.getElementById('itemName').value.trim();
+    const statusInput = document.getElementById('itemStatus').value;
+    const noteInput = document.getElementById('itemNote').value.trim();
+
+    if (!nameInput) {
+      alert('Mohon isi nama fasilitas/alat terlebih dahulu!');
+      return;
+    }
+
+    const data = getStorageData();
+    const now = new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+
+    // Cek apakah item sudah ada, jika ada maka update
+    const existingIndex = data.findIndex(item => item.name.toLowerCase() === nameInput.toLowerCase());
+
+    if (existingIndex > -1) {
+      data[existingIndex].status = statusInput;
+      data[existingIndex].note = noteInput || '-';
+      data[existingIndex].updatedAt = now;
+    } else {
+      data.push({
+        name: nameInput,
+        status: statusInput,
+        note: noteInput || '-',
+        updatedAt: now
+      });
+    }
+
+    saveData(data);
+
+    // Reset input form
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemNote').value = '';
+  }
+
+  function deleteItem(index) {
+    if (confirm('Apakah Anda yakin ingin menghapus data item ini?')) {
+      const data = getStorageData();
+      data.splice(index, 1);
+      saveData(data);
+    }
+  }
+
+  function loadData() {
+    const data = getStorageData();
+    const tableBody = document.getElementById('sarprasTableBody');
+    tableBody.innerHTML = '';
+
+    if (data.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">Belum ada data sarpras. Silakan tambahkan di atas.</td></tr>`;
+      return;
+    }
+
+    data.forEach((item, index) => {
+      let badgeClass = 'bg-aman';
+      if (item.status === 'Perlu Perhatian') badgeClass = 'bg-pantau';
+      if (item.status === 'Rusak') badgeClass = 'bg-rusak';
+
+      const row = `
+        <tr>
+          <td><strong>${item.name}</strong></td>
+          <td><span class="badge ${badgeClass}">${item.status}</span></td>
+          <td>${item.note}</td>
+          <td><small>${item.updatedAt}</small></td>
+          <td><button class="btn-delete" onclick="deleteItem(${index})">Hapus</button></td>
+        </tr>
+      `;
+      tableBody.innerHTML += row;
+    });
+  }
+</script>
+
+</body>
+</html>
