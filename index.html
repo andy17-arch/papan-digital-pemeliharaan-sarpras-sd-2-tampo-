@@ -75,18 +75,18 @@
         </tr>
       </thead>
       <tbody id="sarprasTableBody">
-        <!-- Data akan dimasukkan oleh JavaScript -->
+        <!-- https://database-papan-digital-default-rtdb.asia-southeast1.firebasedatabase.app/ -->
       </tbody>
     </table>
   </div>
 </div>
 
 <script>
-  // Mengambil data dari LocalStorage saat halaman dimuat
+  // Mengambil data dari https://database-papan-digital-default-rtdb.asia-southeast1.firebasedatabase.app/ saat halaman dimuat
   document.addEventListener('DOMContentLoaded', loadData);
 
   function getStorageData() {
-    return JSON.parse(localStorage.getItem('sarprasData')) || [];
+    return https://database-papan-digital-default-rtdb.asia-southeast1.firebasedatabase.app/.parse(localStorage.getItem('sarprasData')) || [];
   }
 
   function saveData(data) {
